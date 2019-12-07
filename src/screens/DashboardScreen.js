@@ -345,7 +345,18 @@ export default class DashboardScreen extends React.Component {
                             ))
                         }
                     </MapView>
+                    <View style={{ position: 'absolute', right: 10, bottom: 10, }}>
+                        <TouchableOpacity style={{}}
+                            onPress={this._onCurrentLocationPress}>
+                            <Image
+                                style={{ width: 40, height: 40, padding: 0 }}
+                                source={require('../assets/mapicons/markercurrent.png')}
+                            />
+                        </TouchableOpacity>
+                    </View>
                 </View>
+
+
 
                 <View style={CustomStyles.bottomView}>
 

@@ -43,7 +43,8 @@ export default StyleSheet.create({
 
     },
     mapContainer: {
-        height: '70%'
+        height: '70%',
+        flexDirection:'column'
     },
     bottomView: {
         width: '100%',

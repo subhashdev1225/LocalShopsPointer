@@ -7,28 +7,57 @@ export default StyleSheet.create({
 
     container: {
         flex: 1,
-        elevation: 2,
-        backgroundColor: 'grey'
+        elevation: 5,
     },
-    topContainer: {
+    titleText: {
+        color: 'rgba(106,167,211,1)',
+        paddingTop: 10,
+        paddingLeft: 10,
+        fontFamily: 'Arial',
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    title1Text: {
+        paddingTop: 15,
+        paddingLeft: 10,
+        fontSize: 15,
+        fontWeight: 'bold',
+    },
+    subTitleText: {
+        color: 'rgba(106,167,211,1)',
+        paddingTop: 7,
+        paddingLeft: 10,
+        fontSize: 15,
+        fontWeight: 'normal',
 
     },
-    buttonContainer: {
-
+    detailsContainer: {
+        elevation: 10,
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        padding: 10
     },
     map: {
-        height: '100%'
+        ...StyleSheet.absoluteFillObject,
+
+    },
+    mapContainer: {
+        height: '70%'
     },
     bottomView: {
         width: '100%',
-        height: 150,
-        backgroundColor: 'rgba(3, 177, 252,0.0)',
-        alignItems: 'center',
-        position: 'absolute',
-        bottom: 30,
+        height: '20%',
+        flexDirection: 'column',
+        padding:0,
+    },
+    btnView: {
+        width: '100%',
+        height: 50,
+        backgroundColor: 'white',
+        flexDirection: 'row',
         justifyContent: 'space-evenly',
-        flexDirection: 'row'
-        
+        alignItems: 'center',
     },
     calloutContainer: {
         height: 100,

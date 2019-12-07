@@ -5,13 +5,16 @@ import Geolocation from '@react-native-community/geolocation';
 import { request_device_location_runtime_permission } from '../utils/RuntimePermission'
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-import { View, Alert, Text, Platform } from 'react-native';
-
+import { View, Alert, Text, Platform, Image, TouchableOpacity, Dimensions } from 'react-native';
 import RightAction from '../navigationComponents/RightAction';
-
 import { MultiPickerMaterialDialog } from 'react-native-material-dialog';
+import Loader from '../utils/Loader';
 
-
+const screen = Dimensions.get('window');
+const ASPECT_RATIO = screen.width / screen.height;
+const LATITUDE_DELTA = (screen.width - 200) / screen.height;
+const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+import Global from '../utils/Global'
 
 export default class DashboardScreen extends React.Component {
 
@@ -22,49 +25,24 @@ export default class DashboardScreen extends React.Component {
             multiPickerVisible: false,
             latitude: 37.78825,
             longitude: -122.4324,
-            latitudeDelta: 0.015,
-            longitudeDelta: 0.0121,
+            latitudeDelta: LATITUDE_DELTA,
+            longitudeDelta: LONGITUDE_DELTA,
             addressComponent: '',
+            opens_at: '',
+            closes_at: '',
+            titleName: '',
             markers: [],
             multiPickerSelectedItems: [],
             updatedArr: [],
-            coordinates: [
-                {
-                    id: '1',
-                    name: 'Shop1 TIG',
-                    latitude: 37.8025259,
-                    longitude: -122.4351431,
-                    description: 'hey 1',
-                },
-                {
-                    id: '2',
-                    name: 'Shop2 TIG',
-                    latitude: 37.7896386,
-                    longitude: -122.421646,
-                    description: 'hey 2',
-                },
-                {
-                    id: '3',
-                    name: 'Shop3 TIG',
-                    latitude: 37.7665248,
-                    longitude: -122.4161628,
-                    description: 'hey 3',
-                },
-                {
-                    id: '4',
-                    name: 'Shop4 TIG',
-                    latitude: 37.7948605,
-                    longitude: -122.4596065,
-                    description: 'hey 4',
-                },
-                {
-                    id: '5',
-                    name: 'Shop5 TIG',
-                    latitude: 37.8025259,
-                    longitude: -122.4596065,
-                    description: 'hey 5',
-                }
-            ],
+            isloading: true,
+            category: [],
+            coordinates: [],
+            region: {
+                latitude: 37.779386,
+                longitude: -122.4594065,
+                latitudeDelta: LATITUDE_DELTA,
+                longitudeDelta: LONGITUDE_DELTA,
+            },
             selectedIndex: 0
         }
     }
@@ -73,28 +51,43 @@ export default class DashboardScreen extends React.Component {
     static navigationOptions = ({ navigation }) => {
         const { params = {} } = navigation.state;
         return {
-            headerTintColor: 'white',
+            headerTintColor: 'orange',
             headerStyle: {
-                backgroundColor: 'rgba(59, 89, 152,1.0)'
+                backgroundColor: 'white'
             },
-            headerRight: () => <RightAction img={'filter'} onRightPress={params._openRightPress} state={params.state} />,
+            headerRight: () => <RightAction onRightPress={params._openRightPress} state={params.state} />,
         }
     };
 
 
+    componentWillMount() {
+        this.setState({
+            category: Global.category,
+            coordinates: Global.coordinates
+        })
+        this.showIndicator()
+    }
 
-
+    showIndicator() {
+        setTimeout(() => {
+            this.setState({
+                isloading: false
+            })
+        }, 4000)
+    }
 
     componentDidMount() {
 
         this.props.navigation.setParams({ _openRightPress: this._openRightPress, state: this.state });
-
-        
         if (this.state.multiPickerSelectedItems.length > 0) {
             this.setState({ updatedArr: this.state.multiPickerSelectedItems })
         }
+
         else {
-            this.setState({ updatedArr: this.state.coordinates })
+            this.setState({
+                isloading: true
+            });
+            this.setState({ updatedArr: this.state.coordinates, selectedIndex: 0 })
         }
 
 
@@ -123,13 +116,7 @@ export default class DashboardScreen extends React.Component {
         })
     }
 
-
     // button Click
-
-
-    _markerClick = () => {
-        Alert.alert('Test')
-    }
 
     _callOutClick = () => {
         Alert.alert(
@@ -151,8 +138,6 @@ export default class DashboardScreen extends React.Component {
         this.setState({ multiPickerVisible: true })
     }
 
-
-
     _onPrevPress = () => {
         console.log('state', this.state.selectedIndex)
         let index = this.state.selectedIndex
@@ -165,29 +150,26 @@ export default class DashboardScreen extends React.Component {
         }
 
         console.log('select', index)
-
-        let location = this.state.updatedArr[index]
-        console.log('location', location)
+        let marker = this.state.updatedArr[index]
+        console.log('location', marker)
+        this.setState({ titleName: marker.attributes.name, closes_at: marker.attributes.closes_at, opens_at: marker.attributes.opens_at })
 
         this._map.animateToRegion({
-            latitude: location.latitude,
-            longitude: location.longitude,
+            latitude: marker.attributes.coordinates.latitude,
+            longitude: marker.attributes.coordinates.longitude,
             latitudeDelta: 0.09,
             longitudeDelta: 0.035,
         })
         this.state.markers[index].showCallout()
-
     }
 
-    _onReset=() =>{
+    _onReset = () => {
         this.setState({ selectedIndex: 0 })
         let index = this.state.selectedIndex
-
-        let location = this.state.updatedArr[index]
-
+        let marker = this.state.updatedArr[index]
         this._map.animateToRegion({
-            latitude: location.latitude,
-            longitude: location.longitude,
+            latitude: marker.attributes.coordinates.latitude,
+            longitude: marker.attributes.coordinates.longitude,
             latitudeDelta: 0.09,
             longitudeDelta: 0.035,
         })
@@ -196,18 +178,20 @@ export default class DashboardScreen extends React.Component {
 
     _onRefreshPress = () => {
 
-        var pinArr = []
-        this.setState({updatedArr:this.state.coordinates, multiPickerSelectedItems:pinArr})
+        this.showIndicator()
+        this.setState({ updatedArr: this.state.coordinates, multiPickerSelectedItems: [], isloading: true })
         this.setState({ selectedIndex: 0 })
         let index = this.state.selectedIndex
+        let marker = this.state.coordinates[index]
+        console.log('--->', this.state.multiPickerSelectedItems);
+        this.setState({ titleName: marker.attributes.name, closes_at: marker.attributes.closes_at, opens_at: marker.attributes.opens_at })
 
-        let location = this.state.coordinates[index]
 
         this._map.animateToRegion({
-            latitude: location.latitude,
-            longitude: location.longitude,
-            latitudeDelta: 0.09,
-            longitudeDelta: 0.035,
+            latitude: marker.attributes.coordinates.latitude,
+            longitude: marker.attributes.coordinates.longitude,
+            latitudeDelta: LATITUDE_DELTA,
+            longitudeDelta: LONGITUDE_DELTA,
         })
         this.state.markers[index].showCallout()
     }
@@ -219,38 +203,39 @@ export default class DashboardScreen extends React.Component {
         if (index > this.state.updatedArr.length - 1) {
             index = 0
             this.setState({ selectedIndex: index })
-
         } else {
             this.setState({ selectedIndex: this.state.selectedIndex + 1 });
         }
 
         console.log('select', index)
 
-        let location = this.state.updatedArr[index]
-        console.log('location', location)
+        let marker = this.state.updatedArr[index]
+        console.log('location', marker)
+        this.setState({ titleName: marker.attributes.name, closes_at: marker.attributes.closes_at, opens_at: marker.attributes.opens_at })
 
         this._map.animateToRegion({
-            latitude: location.latitude,
-            longitude: location.longitude,
+            latitude: marker.attributes.coordinates.latitude,
+            longitude: marker.attributes.coordinates.longitude,
             latitudeDelta: 0.09,
             longitudeDelta: 0.035,
+
         })
         this.state.markers[index].showCallout()
     }
 
 
     _onMarkerPress = (marker, index) => {
-        console.log('button clicked', index, marker)
+
         this.setState({ selectedIndex: index })
 
-        let loc = this.state.updatedArr[index]
-        this._map.animateToRegion({
-            latitude: loc.latitude,
-            longitude: loc.longitude,
-            latitudeDelta: 0.09,
-            longitudeDelta: 0.035,
-        })
+        this.setState({ titleName: marker.attributes.name, closes_at: marker.attributes.closes_at, opens_at: marker.attributes.opens_at })
 
+        this._map.animateToRegion({
+            latitude: marker.attributes.coordinates.latitude,
+            longitude: marker.attributes.coordinates.longitude,
+            latitudeDelta: LATITUDE_DELTA,
+            longitudeDelta: LONGITUDE_DELTA,
+        })
         this.state.markers[index].showCallout()
     }
 
@@ -261,9 +246,8 @@ export default class DashboardScreen extends React.Component {
         this._map.animateToRegion({
             latitude: this.state.latitude,
             longitude: this.state.longitude,
-
-            latitudeDelta: 0.015,
-            longitudeDelta: 0.0121,
+            latitudeDelta: 0.09,
+            longitudeDelta: 0.035,
         })
     }
 
@@ -274,127 +258,141 @@ export default class DashboardScreen extends React.Component {
         return (
             <View style={CustomStyles.container}>
 
+                <Loader
+                    loading={this.state.isloading} />
 
                 <MultiPickerMaterialDialog
-                    title={'Select Shops'}
+                    title={'Select Category to display on Map'}
                     colorAccent={this.props.colorAccent}
-                    items={this.state.coordinates.map((row, index) => {
-                        return { value: row, label: row.name+"\n"+row.description};
+
+                    items={this.state.category.map((row, index) => {
+                        return { value: row, label: row.attributes.title + "\n" + row.attributes.description };
                     })}
                     visible={this.state.multiPickerVisible}
                     selectedItems={this.state.multiPickerSelectedItems}
+
                     onCancel={() => this.setState({ multiPickerVisible: false })}
                     onOk={result => {
-
                         var pinArr = []
                         for (i = 0; i < result.selectedItems.length; i++) {
                             pinArr.push(result.selectedItems[i]['value'])
-                          }
-
-                        this.setState({multiPickerVisible: false  ,selectedIndex: 0 }); 
-
-                        if (pinArr.length >0){
-                            this.setState({updatedArr:pinArr,multiPickerSelectedItems: pinArr})
-                            this._onReset
-                        }else{
-                            this.setState({updatedArr:this.state.coordinates})
-                            this._onReset
                         }
 
+                        var filteredPinArr = []
+                        filteredPinArr = this.filterData(pinArr)
+
+                        console.log('filtered data--->>', filteredPinArr);
+
+                        if (filteredPinArr.length > 0) {
+                            this.setState({ updatedArr: filteredPinArr })
+                        } else {
+                            this.setState({ updatedArr: this.state.coordinates })
+                        }
+                        this.setState({ multiPickerVisible: false, selectedIndex: 0 });
+                        this._onReset()
                     }}
                 />
-                
-                <MapView
-                    provider={PROVIDER_GOOGLE}
-                    ref={map => this._map = map}
-                    showsUserLocation={true}
-                    style={CustomStyles.map}
-                    zoomEnabled={true}
-                    scrollEnabled={true}
-                    moveOnMarkerPress={true}
-                    zoomControlEnabled={true}
 
-                    initialRegion={{
-                        latitude: this.state.latitude,
-                        longitude: this.state.longitude,
-                        latitudeDelta: 0.09,
-                        longitudeDelta: 0.035,
-                    }}
-                >
-
-                    <Marker
-                        coordinate={{
-                            latitude: this.state.latitude,
-                            longitude: this.state.longitude
-                        }}
-                        title={"Home"}
-                        description={"My home Address-----"}
+                <View style={CustomStyles.mapContainer}>
+                    <MapView
+                        provider={PROVIDER_GOOGLE}
+                        ref={map => this._map = map}
+                        showsUserLocation={true}
+                        style={CustomStyles.map}
+                        zoomEnabled={true}
+                        scrollEnabled={true}
+                        zoomControlEnabled={true}
+                        initialRegion={this.state.region}
                     >
-                        <Icon name="home" size={30} color="#900" />
-
-                        <Callout
-                            onPress={this._callOutClick}
+                        <Marker
+                            coordinate={{
+                                latitude: this.state.latitude,
+                                longitude: this.state.longitude
+                            }}
+                            title={"Home"}
+                            description={"My home Address-----"}
                         >
-                            <View style={CustomStyles.calloutContainer}>
-                                <Icon name="home" size={30} color="#900" />
-                                <Text>INteresting PLACE</Text>
-                                <Text>ADDRESS: HOME</Text>
-                            </View>
-
-                        </Callout>
-                    </Marker>
-
-
-                    {/* MARKER POint */}
-
-                    {
-                        this.state.updatedArr.map((marker, index) => (
-
-                            <Marker
-                                onPress={() => this._onMarkerPress(marker, index)}
-                                key={marker.name}
-                                ref={ref => this.state.markers[index] = ref}
-                                coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
-                                title={marker.name}
-                                description={marker.description}
+                            <Icon name="home" size={30} color="#900" />
+                            <Callout
+                                onPress={this._callOutClick}
                             >
-                                <Callout>
-                                    <Icon name="map-marker" size={30} color="#900" />
-                                    <Text>Name: {marker.name}</Text>
-                                    <Text>Address: {marker.description}</Text>
+                                <View style={CustomStyles.calloutContainer}>
+                                    <Icon name="home" size={30} color="#900" />
+                                    <Text>{this.state.coordinates.length > 0 ? `My home distance : ${this.state.coordinates.length} km` : 'Not hello'}</Text>
+                                    <Text>ADDRESS: HOME</Text>
+                                </View>
 
-                                </Callout>
+                            </Callout>
+                        </Marker>
 
-                            </Marker>
-                        ))
-                    }
-                </MapView>
 
+                        {/* MARKER POint */}
+                        {
+                            this.state.updatedArr.map((marker, index) => (
+                                <MapView.Marker
+                                    onPress={() => this._onMarkerPress(marker, index)}
+                                    key={marker.attributes.name}
+                                    ref={ref => this.state.markers[index] = ref}
+                                    coordinate={{ latitude: marker.attributes.coordinates.latitude, longitude: marker.attributes.coordinates.longitude }}
+                                    title={marker.attributes.name}
+                                // description={marker.attributes.opens_at}
+                                >
+                                    <Image
+                                        style={{ width: 45, height: 45 }}
+                                        source={this.renderIcon(marker)}
+                                    />
+                                </MapView.Marker>
+                            ))
+                        }
+                    </MapView>
+                </View>
 
                 <View style={CustomStyles.bottomView}>
 
-                    <Icon.Button
-                        name="arrow-circle-left"
-                        backgroundColor="#3b5998"
-                        onPress={this._onPrevPress}
-                    >Prev</Icon.Button>
-                    <Icon.Button
-                        name="refresh"
-                        backgroundColor="#3b5998"
-                        onPress={this._onRefreshPress}
-                    >Reset</Icon.Button>
+                    <View style={CustomStyles.btnView}>
 
-                    <Icon.Button
-                        name="arrow-circle-right"
-                        backgroundColor="#3b5998"
-                        onPress={this._onNextPress}
-                    >Next</Icon.Button>
+                        <TouchableOpacity style={{ padding: 10, marginBottom: 5 }}
+                            onPress={this._onPrevPress}>
+                            <Image
+                                style={{ width: 40, height: 40, padding: 0 }}
+                                source={require('../assets/mapicons/leftarrow.png')}
+                            />
+                        </TouchableOpacity>
 
-                    <Icon.Button
-                        name="location-arrow"
-                        backgroundColor="#3b5998"
-                        onPress={this._onCurrentLocationPress}
-                    ></Icon.Button>
+                        <TouchableOpacity style={{ padding: 10, marginBottom: 5 }}
+                            onPress={this._onRefreshPress}>
+                            <Image
+                                style={{ width: 40, height: 40, padding: 0 }}
+                                source={require('../assets/mapicons/reseticon.png')}
+                            />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={{ padding: 10, marginBottom: 5 }}
+                            onPress={this._onNextPress}>
+                            <Image
+                                style={{ width: 40, height: 40, padding: 0 }}
+                                source={require('../assets/mapicons/rightarrow.png')}
+                            />
+                        </TouchableOpacity>
+
+                    </View>
+                    <View style={CustomStyles.detailsContainer}>
+                        <Text style={CustomStyles.titleText}>Address</Text>
+
+                        <View style={{ flexDirection: 'row', width: '100%' }}>
+                            <Text style={CustomStyles.title1Text}>Shop name:</Text>
+                            <Text style={CustomStyles.title1Text}>{this.state.titleName}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', width: '100%' }}>
+                            <Text style={CustomStyles.title1Text}>Open time:</Text>
+                            <Text style={CustomStyles.title1Text}> {this.state.opens_at}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', width: '100%' }}>
+                            <Text style={CustomStyles.title1Text}>Close time:</Text>
+                            <Text style={CustomStyles.title1Text}> {this.state.closes_at}</Text>
+                        </View>
+
+                    </View>
                 </View>
             </View>
         )
@@ -402,4 +400,35 @@ export default class DashboardScreen extends React.Component {
     }
 
 
+    //----
+    renderIcon(marker) {
+
+        if (marker.type === 'Bookshops') {
+            return require('../assets/mapicons/markerbook.png')
+        } else if (marker.type === 'MedicineShop') {
+            return require('../assets/mapicons/markermedicine.png')
+        }
+        else {
+            return require('../assets/mapicons/flowerShop.png')
+        }
+    }
+
+
+    filterData(pinArr) {
+        var filteredLocArray = []
+
+        for (index = 0; index < pinArr.length; index++) {
+            let category = pinArr[index]
+
+            for (innerindex = 0; innerindex < this.state.coordinates.length; innerindex++) {
+                let location = this.state.coordinates[innerindex]
+                if (location.attributes.category_id === category.id) {
+                    filteredLocArray.push(location)
+                }
+            }
+        }
+        return filteredLocArray
+    }
+
 }
+

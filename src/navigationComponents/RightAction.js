@@ -1,24 +1,21 @@
 
 import React, { Component } from 'react';
-
 import { StyleSheet, View, Text, Image, TouchableOpacity } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome';
 
 
 export default class RightAction extends Component {
 
   render() {
 
-    const { onRightPress, imgName, state } = this.props
+    const { onRightPress, state } = this.props
     return (
-      <Icon.Button
-      style = {{height:40, width : 40}}
-        name='filter'
-        backgroundColor="#3b5998"
-        onPress={() => onRightPress(state)}
-      >      </Icon.Button>
-
-
+      <TouchableOpacity style={{ padding: 10, marginBottom: 5 }}
+        onPress={() => onRightPress(state)}>
+        <Image
+          style={{ width: 40, height: 40, padding: 0 }}
+          source={require('../assets/mapicons/filter.png')}
+        />
+      </TouchableOpacity>
     );
   }
 }

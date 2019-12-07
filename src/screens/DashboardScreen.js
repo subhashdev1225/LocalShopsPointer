@@ -5,7 +5,7 @@ import Geolocation from '@react-native-community/geolocation';
 import { request_device_location_runtime_permission } from '../utils/RuntimePermission'
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-import { View, Alert, Text, Platform, Image, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Alert, Text, Platform, Image, TouchableOpacity, Dimensions, SafeAreaView } from 'react-native';
 import RightAction from '../navigationComponents/RightAction';
 import { MultiPickerMaterialDialog } from 'react-native-material-dialog';
 import Loader from '../utils/Loader';
@@ -256,158 +256,157 @@ export default class DashboardScreen extends React.Component {
     render() {
 
         return (
-            <View style={CustomStyles.container}>
+                <View style={CustomStyles.container}>
+                    <Loader
+                        loading={this.state.isloading} />
 
-                <Loader
-                    loading={this.state.isloading} />
+                    <MultiPickerMaterialDialog
+                        title={'Select Category to display on Map'}
+                        colorAccent={this.props.colorAccent}
 
-                <MultiPickerMaterialDialog
-                    title={'Select Category to display on Map'}
-                    colorAccent={this.props.colorAccent}
+                        items={this.state.category.map((row, index) => {
+                            return { value: row, label: row.attributes.title + "\n" + row.attributes.description };
+                        })}
+                        visible={this.state.multiPickerVisible}
+                        selectedItems={this.state.multiPickerSelectedItems}
 
-                    items={this.state.category.map((row, index) => {
-                        return { value: row, label: row.attributes.title + "\n" + row.attributes.description };
-                    })}
-                    visible={this.state.multiPickerVisible}
-                    selectedItems={this.state.multiPickerSelectedItems}
+                        onCancel={() => this.setState({ multiPickerVisible: false })}
+                        onOk={result => {
+                            var pinArr = []
+                            for (i = 0; i < result.selectedItems.length; i++) {
+                                pinArr.push(result.selectedItems[i]['value'])
+                            }
 
-                    onCancel={() => this.setState({ multiPickerVisible: false })}
-                    onOk={result => {
-                        var pinArr = []
-                        for (i = 0; i < result.selectedItems.length; i++) {
-                            pinArr.push(result.selectedItems[i]['value'])
-                        }
+                            var filteredPinArr = []
+                            filteredPinArr = this.filterData(pinArr)
 
-                        var filteredPinArr = []
-                        filteredPinArr = this.filterData(pinArr)
+                            console.log('filtered data--->>', filteredPinArr);
 
-                        console.log('filtered data--->>', filteredPinArr);
+                            if (filteredPinArr.length > 0) {
+                                this.setState({ updatedArr: filteredPinArr })
+                            } else {
+                                this.setState({ updatedArr: this.state.coordinates })
+                            }
+                            this.setState({ multiPickerVisible: false, selectedIndex: 0 });
+                            this._onReset()
+                        }}
+                    />
 
-                        if (filteredPinArr.length > 0) {
-                            this.setState({ updatedArr: filteredPinArr })
-                        } else {
-                            this.setState({ updatedArr: this.state.coordinates })
-                        }
-                        this.setState({ multiPickerVisible: false, selectedIndex: 0 });
-                        this._onReset()
-                    }}
-                />
-
-                <View style={CustomStyles.mapContainer}>
-                    <MapView
-                        provider={PROVIDER_GOOGLE}
-                        ref={map => this._map = map}
-                        showsUserLocation={true}
-                        style={CustomStyles.map}
-                        zoomEnabled={true}
-                        scrollEnabled={true}
-                        zoomControlEnabled={true}
-                        initialRegion={this.state.region}
-                    >
-                        <Marker
-                            coordinate={{
-                                latitude: this.state.latitude,
-                                longitude: this.state.longitude
-                            }}
-                            title={"Home"}
-                            description={"My home Address-----"}
+                    <View style={CustomStyles.mapContainer}>
+                        <MapView
+                            provider={PROVIDER_GOOGLE}
+                            ref={map => this._map = map}
+                            showsUserLocation={true}
+                            style={CustomStyles.map}
+                            zoomEnabled={true}
+                            scrollEnabled={true}
+                            zoomControlEnabled={true}
+                            initialRegion={this.state.region}
                         >
-                            <Icon name="home" size={30} color="#900" />
-                            <Callout
-                                onPress={this._callOutClick}
+                            <Marker
+                                coordinate={{
+                                    latitude: this.state.latitude,
+                                    longitude: this.state.longitude
+                                }}
+                                title={"Home"}
+                                description={"My home Address-----"}
                             >
-                                <View style={CustomStyles.calloutContainer}>
-                                    <Icon name="home" size={30} color="#900" />
-                                    <Text>{this.state.coordinates.length > 0 ? `My home distance : ${this.state.coordinates.length} km` : 'Not hello'}</Text>
-                                    <Text>ADDRESS: HOME</Text>
-                                </View>
-
-                            </Callout>
-                        </Marker>
-
-
-                        {/* MARKER POint */}
-                        {
-                            this.state.updatedArr.map((marker, index) => (
-                                <MapView.Marker
-                                    onPress={() => this._onMarkerPress(marker, index)}
-                                    key={marker.attributes.name}
-                                    ref={ref => this.state.markers[index] = ref}
-                                    coordinate={{ latitude: marker.attributes.coordinates.latitude, longitude: marker.attributes.coordinates.longitude }}
-                                    title={marker.attributes.name}
-                                // description={marker.attributes.opens_at}
+                                <Icon name="home" size={30} color="#900" />
+                                <Callout
+                                    onPress={this._callOutClick}
                                 >
-                                    <Image
-                                        style={{ width: 45, height: 45 }}
-                                        source={this.renderIcon(marker)}
-                                    />
-                                </MapView.Marker>
-                            ))
-                        }
-                    </MapView>
-                    <View style={{ position: 'absolute', right: 10, bottom: 10, }}>
-                        <TouchableOpacity style={{}}
-                            onPress={this._onCurrentLocationPress}>
-                            <Image
-                                style={{ width: 40, height: 40, padding: 0 }}
-                                source={require('../assets/mapicons/markercurrent.png')}
-                            />
-                        </TouchableOpacity>
+                                    <View style={CustomStyles.calloutContainer}>
+                                        <Icon name="home" size={30} color="#900" />
+                                        <Text>{this.state.coordinates.length > 0 ? `My home distance : ${this.state.coordinates.length} km` : 'Not hello'}</Text>
+                                        <Text>ADDRESS: HOME</Text>
+                                    </View>
+
+                                </Callout>
+                            </Marker>
+
+
+                            {/* MARKER POint */}
+                            {
+                                this.state.updatedArr.map((marker, index) => (
+                                    <MapView.Marker
+                                        onPress={() => this._onMarkerPress(marker, index)}
+                                        key={marker.attributes.name}
+                                        ref={ref => this.state.markers[index] = ref}
+                                        coordinate={{ latitude: marker.attributes.coordinates.latitude, longitude: marker.attributes.coordinates.longitude }}
+                                        title={marker.attributes.name}
+                                    // description={marker.attributes.opens_at}
+                                    >
+                                        <Image
+                                            style={{ width: 45, height: 45 }}
+                                            source={this.renderIcon(marker)}
+                                        />
+                                    </MapView.Marker>
+                                ))
+                            }
+                        </MapView>
+                        <View style={{ position: 'absolute', right: 10, bottom: 10, }}>
+                            <TouchableOpacity style={{}}
+                                onPress={this._onCurrentLocationPress}>
+                                <Image
+                                    style={{ width: 40, height: 40, padding: 0 }}
+                                    source={require('../assets/mapicons/markercurrent.png')}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+
+
+                    <View style={CustomStyles.bottomView}>
+
+                        <View style={CustomStyles.btnView}>
+
+                            <TouchableOpacity style={{ padding: 10, marginBottom: 5 }}
+                                onPress={this._onPrevPress}>
+                                <Image
+                                    style={{ width: 40, height: 40, padding: 0 }}
+                                    source={require('../assets/mapicons/leftarrow.png')}
+                                />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={{ padding: 10, marginBottom: 5 }}
+                                onPress={this._onRefreshPress}>
+                                <Image
+                                    style={{ width: 40, height: 40, padding: 0 }}
+                                    source={require('../assets/mapicons/reseticon.png')}
+                                />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={{ padding: 10, marginBottom: 5 }}
+                                onPress={this._onNextPress}>
+                                <Image
+                                    style={{ width: 40, height: 40, padding: 0 }}
+                                    source={require('../assets/mapicons/rightarrow.png')}
+                                />
+                            </TouchableOpacity>
+
+                        </View>
+                        <View style={CustomStyles.detailsContainer}>
+                            <Text style={CustomStyles.titleText}>Address</Text>
+
+                            <View style={{ flexDirection: 'row', width: '100%' }}>
+                                <Text style={CustomStyles.title1Text}>Shop name:</Text>
+                                <Text style={CustomStyles.title1Text}>{this.state.titleName}</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', width: '100%' }}>
+                                <Text style={CustomStyles.title1Text}>Open time:</Text>
+                                <Text style={CustomStyles.title1Text}> {this.state.opens_at}</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', width: '100%' }}>
+                                <Text style={CustomStyles.title1Text}>Close time:</Text>
+                                <Text style={CustomStyles.title1Text}> {this.state.closes_at}</Text>
+                            </View>
+
+                        </View>
                     </View>
                 </View>
 
-
-
-                <View style={CustomStyles.bottomView}>
-
-                    <View style={CustomStyles.btnView}>
-
-                        <TouchableOpacity style={{ padding: 10, marginBottom: 5 }}
-                            onPress={this._onPrevPress}>
-                            <Image
-                                style={{ width: 40, height: 40, padding: 0 }}
-                                source={require('../assets/mapicons/leftarrow.png')}
-                            />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={{ padding: 10, marginBottom: 5 }}
-                            onPress={this._onRefreshPress}>
-                            <Image
-                                style={{ width: 40, height: 40, padding: 0 }}
-                                source={require('../assets/mapicons/reseticon.png')}
-                            />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={{ padding: 10, marginBottom: 5 }}
-                            onPress={this._onNextPress}>
-                            <Image
-                                style={{ width: 40, height: 40, padding: 0 }}
-                                source={require('../assets/mapicons/rightarrow.png')}
-                            />
-                        </TouchableOpacity>
-
-                    </View>
-                    <View style={CustomStyles.detailsContainer}>
-                        <Text style={CustomStyles.titleText}>Address</Text>
-
-                        <View style={{ flexDirection: 'row', width: '100%' }}>
-                            <Text style={CustomStyles.title1Text}>Shop name:</Text>
-                            <Text style={CustomStyles.title1Text}>{this.state.titleName}</Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', width: '100%' }}>
-                            <Text style={CustomStyles.title1Text}>Open time:</Text>
-                            <Text style={CustomStyles.title1Text}> {this.state.opens_at}</Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', width: '100%' }}>
-                            <Text style={CustomStyles.title1Text}>Close time:</Text>
-                            <Text style={CustomStyles.title1Text}> {this.state.closes_at}</Text>
-                        </View>
-
-                    </View>
-                </View>
-            </View>
         )
-
     }
 
 

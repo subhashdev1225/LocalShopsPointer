@@ -18,7 +18,7 @@ export default StyleSheet.create({
         fontWeight: 'bold',
     },
     title1Text: {
-        paddingTop: 15,
+        paddingTop: 10,
         paddingLeft: 10,
         fontSize: 15,
         fontWeight: 'bold',
@@ -36,7 +36,6 @@ export default StyleSheet.create({
         flexDirection: 'column',
         alignItems: 'flex-start',
         justifyContent: 'center',
-        padding: 10
     },
     map: {
         ...StyleSheet.absoluteFillObject,
@@ -48,7 +47,7 @@ export default StyleSheet.create({
     },
     bottomView: {
         width: '100%',
-        height: '20%',
+        bottom:1,
         flexDirection: 'column',
         padding:0,
     },
